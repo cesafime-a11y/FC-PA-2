@@ -759,37 +759,70 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
 
   <!-- pausa -->
   <div class="screen hide" id="pause">
-    <div class="sheet" style="text-align:center;width:min(430px,92vw)">
+    <div class="sheet" style="text-align:center;width:min(700px,94vw)">
       <div class="kicker">PARTIDO DETENIDO</div>
-      <h1 style="font-size:clamp(30px,7vw,52px)">PAUSA</h1>
-      <div id="pauseScore" style="font-family:'Archivo Black';font-size:30px;margin:2px 0 4px"></div>
-      <div id="pauseMin" style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-bottom:16px"></div>
-      <table class="stats">
-        <tr><td id="sPosH">50</td><td>POSESIÓN %</td><td id="sPosA">50</td></tr>
-        <tr><td id="sShH">0</td><td>REMATES</td><td id="sShA">0</td></tr>
-        <tr><td id="sSoH">0</td><td>A PUERTA</td><td id="sSoA">0</td></tr>
-        <tr><td id="sPaH">0</td><td>PASES OK</td><td id="sPaA">0</td></tr>
-        <tr><td id="sFoH">0</td><td>FALTAS</td><td id="sFoA">0</td></tr>
-        <tr><td id="sYcH">0</td><td>AMARILLAS</td><td id="sYcA">0</td></tr>
-        <tr><td id="sCoH">0</td><td>CÓRNERS</td><td id="sCoA">0</td></tr>
-      </table>
-      <div class="grp" style="margin-top:16px;text-align:left">
-        <label>CAMBIOS — te quedan <b id="pCambios">3</b></label>
-        <div id="subsBox" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+      <h1 style="font-size:clamp(28px,6vw,44px)">PAUSA</h1>
+      <div id="pauseScore" style="font-family:'Archivo Black';font-size:26px;margin:2px 0 4px"></div>
+      <div id="pauseMin" style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-bottom:14px"></div>
+
+      <div class="confwrap" style="text-align:left">
+        <nav class="tabs" id="pauseTabs">
+          <button class="tab" data-ptab="pPartido" aria-pressed="true"><b>Partido</b><span>marcador y cambios</span></button>
+          <button class="tab" data-ptab="pPlantelT"><b>Plantel</b><span>tus jugadores ahora</span></button>
+          <button class="tab" data-ptab="pCanteraT"><b>Cantera</b><span>ficha uno nuevo</span></button>
+          <button class="tab" data-ptab="pCarreraT"><b>Carrera</b><span>tabla y progreso</span></button>
+          <button class="tab" data-ptab="pAjustesT"><b>Ajustes</b><span>tacto y gráficos</span></button>
+        </nav>
+        <div class="tabcont">
+
+          <section class="tsec" id="pPartido">
+            <table class="stats">
+              <tr><td id="sPosH">50</td><td>POSESIÓN %</td><td id="sPosA">50</td></tr>
+              <tr><td id="sShH">0</td><td>REMATES</td><td id="sShA">0</td></tr>
+              <tr><td id="sSoH">0</td><td>A PUERTA</td><td id="sSoA">0</td></tr>
+              <tr><td id="sPaH">0</td><td>PASES OK</td><td id="sPaA">0</td></tr>
+              <tr><td id="sFoH">0</td><td>FALTAS</td><td id="sFoA">0</td></tr>
+              <tr><td id="sYcH">0</td><td>AMARILLAS</td><td id="sYcA">0</td></tr>
+              <tr><td id="sCoH">0</td><td>CÓRNERS</td><td id="sCoA">0</td></tr>
+            </table>
+            <div class="grp" style="margin-top:16px">
+              <label>CAMBIOS — te quedan <b id="pCambios">3</b></label>
+              <div id="subsBox" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+            </div>
+            <div class="scorers" id="pauseScorers" style="margin-top:16px"></div>
+          </section>
+
+          <section class="tsec hide" id="pPlantelT">
+            <p class="ayuda">Tu plantilla tal como está ahora. Los cambios de titularidad se hacen desde la pestaña Partido.</p>
+            <div id="pFichasBox"></div>
+          </section>
+
+          <section class="tsec hide" id="pCanteraT">
+            <p class="ayuda">Ficha un jugador sin salir del partido — entra a la plantilla para partidos futuros, no al que ya empezó.</p>
+            <div id="pCanteraBox"></div>
+          </section>
+
+          <section class="tsec hide" id="pCarreraT">
+            <div id="pCarBox"></div>
+          </section>
+
+          <section class="tsec hide" id="pAjustesT">
+            <div class="tune" style="border-top:0;padding-top:0">
+              <label>Fuerza del pase <b id="tvPow">100%</b>
+                <input type="range" id="tPow" min="70" max="170" value="100"></label>
+              <label>Asistencia de puntería <b id="tvCone">normal</b>
+                <input type="range" id="tCone" min="40" max="220" value="100"></label>
+              <label>Cambio automático <b id="tvSw">normal</b>
+                <input type="range" id="tSw" min="0" max="2" step="1" value="1"></label>
+              <label>Calidad gráfica <b id="tvQ">normal</b>
+                <input type="range" id="tQ" min="0" max="2" step="1" value="1"></label>
+            </div>
+          </section>
+
+        </div>
       </div>
-      <div class="scorers" id="pauseScorers" style="margin-top:16px"></div>
-      <div class="tune">
-        <div class="kicker" style="margin-bottom:12px">AJUSTA EL TACTO A TU GUSTO</div>
-        <label>Fuerza del pase <b id="tvPow">100%</b>
-          <input type="range" id="tPow" min="70" max="170" value="100"></label>
-        <label>Asistencia de puntería <b id="tvCone">normal</b>
-          <input type="range" id="tCone" min="40" max="220" value="100"></label>
-        <label>Cambio automático <b id="tvSw">normal</b>
-          <input type="range" id="tSw" min="0" max="2" step="1" value="1"></label>
-        <label>Calidad gráfica <b id="tvQ">normal</b>
-          <input type="range" id="tQ" min="0" max="2" step="1" value="1"></label>
-      </div>
-      <button class="go" id="btnResume">SEGUIR JUGANDO</button>
+
+      <button class="go" id="btnResume" style="margin-top:16px">SEGUIR JUGANDO</button>
       <button class="go" id="btnQuit" style="background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:8px">SALIR AL MENÚ</button>
     </div>
   </div>
