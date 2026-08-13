@@ -1038,7 +1038,7 @@ function guardar(){
       comp:COMP?{tipo:COMP.tipo,eq:COMP.eq,jor:COMP.jor,jornada:COMP.jornada,
                  tabla:COMP.tabla,vivos:COMP.vivos,ronda:COMP.ronda,cr:COMP.cr,
                  fin:COMP.fin,historial:COMP.historial}:null,
-      nLiga:S.nLiga, nCopa:S.nCopa, sonido:SND.on, car:CAR,
+      nLiga:S.nLiga, nCopa:S.nCopa, sonido:SND.on, car:CAR, binds:BINDS,
       hist:S.historico||{pj:0,g:0,e:0,p:0,gf:0,gc:0}
     };
     localStorage.setItem(SAVE.clave,JSON.stringify(d));
@@ -1061,6 +1061,7 @@ function cargar(){
     if(d.nLiga)S.nLiga=d.nLiga;
     if(d.nCopa)S.nCopa=d.nCopa;
     if(d.sonido!==undefined)SND.on=d.sonido;
+    if(d.binds){ BINDS=Object.assign({},BINDS_DEF,d.binds); MAP=buildMap(); }
     S.historico=d.hist||{pj:0,g:0,e:0,p:0,gf:0,gc:0};
     return true;
   }catch(e){ SAVE.ok=false; SAVE.aviso='no se pudo leer lo guardado'; return false; }
@@ -1157,15 +1158,67 @@ function ficharCantera(){
 /* ── entrada ──────────────────────────────────────────────── */
 const K={};
 const ACT={up:0,down:0,left:0,right:0,sprint:0,pass:0,shoot:0,through:0,finesse:0,low:0,switch:0,slide:0,thru_mod:0,hud:0,regate:0};
-/* Teclado reducido: solo la fila qwert / asdfg / zxcv.
-   W A S D mover · F sprint · Q presionar · E centro elevado
-   Z (mantener) + clic izq = pase filtrado · X barrida · C cambiar
-   V tiro raso · G tiro colocado · T ocultar HUD                */
-const MAP={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',
-  KeyF:'sprint', ShiftLeft:'sprint', ShiftRight:'sprint',
-  KeyQ:'pass', KeyE:'through',
-  KeyZ:'thru_mod', KeyX:'slide', KeyC:'switch', KeyR:'regate',
-  KeyV:'low', KeyG:'finesse', KeyT:'hud'};
+/* Teclado remapeable: cada acción tiene una tecla asignada en BINDS,
+   y MAP (tecla → acción) se reconstruye cada vez que cambia algo.
+   El Shift para esprintar queda fijo aparte, no se pisa al remapear. */
+const ACCIONES=[
+  {a:'up',etq:'Arriba'},{a:'down',etq:'Abajo'},{a:'left',etq:'Izquierda'},{a:'right',etq:'Derecha'},
+  {a:'sprint',etq:'Esprintar'},{a:'pass',etq:'Presionar / pase de primera'},
+  {a:'through',etq:'Centro elevado / control orientado'},{a:'thru_mod',etq:'Pase filtrado (mantener)'},
+  {a:'slide',etq:'Barrida'},{a:'switch',etq:'Cambiar de jugador'},{a:'regate',etq:'Regate'},
+  {a:'low',etq:'Tiro raso'},{a:'finesse',etq:'Tiro colocado'},{a:'hud',etq:'Mostrar/ocultar HUD'}
+];
+const BINDS_DEF={up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',sprint:'KeyF',pass:'KeyQ',
+  through:'KeyE',thru_mod:'KeyZ',slide:'KeyX',switch:'KeyC',regate:'KeyR',low:'KeyV',
+  finesse:'KeyG',hud:'KeyT'};
+let BINDS=Object.assign({},BINDS_DEF);
+function buildMap(){
+  const m={ShiftLeft:'sprint',ShiftRight:'sprint'};
+  for(const a in BINDS) if(BINDS[a]) m[BINDS[a]]=a;
+  return m;
+}
+let MAP=buildMap();
+function codeLabel(code){
+  if(!code)return '—';
+  if(code.startsWith('Key'))return code.slice(3);
+  if(code.startsWith('Digit'))return code.slice(5);
+  const esp={ShiftLeft:'Shift Izq',ShiftRight:'Shift Der',Space:'Espacio',
+    ControlLeft:'Ctrl Izq',ControlRight:'Ctrl Der',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
+  return esp[code]||code;
+}
+let reasignando=null;
+function pintarControles(){
+  const box=$v('controlesBox'); if(!box)return;
+  box.innerHTML=`<p class="ayuda">Pulsa "Reasignar" y luego la tecla que quieras usar. <b>Esc</b> cancela. El Shift para esprintar queda fijo aparte.</p>`+
+    ACCIONES.map(x=>`<div class="fila" style="cursor:default">
+        <span class="nom">${x.etq}</span>
+        <span class="val" style="font-family:'JetBrains Mono';min-width:78px;text-align:right">
+          ${reasignando===x.a?'…':`<b style="color:var(--home)">${codeLabel(BINDS[x.a])}</b>`}</span>
+        <button class="opt" data-reasignar="${x.a}" style="margin-left:10px;padding:4px 10px;font-size:10.5px">
+          ${reasignando===x.a?'Cancelar':'Reasignar'}</button>
+      </div>`).join('')+
+    `<button class="opt" id="bResetControles" style="margin-top:14px">Restaurar controles por defecto</button>`;
+  box.querySelectorAll('[data-reasignar]').forEach(b=>b.onclick=()=>{
+    reasignando=(reasignando===b.dataset.reasignar)?null:b.dataset.reasignar;
+    pintarControles();
+  });
+  const br=$v('bResetControles');
+  if(br)br.onclick=()=>{ BINDS=Object.assign({},BINDS_DEF); MAP=buildMap(); guardar(); pintarControles(); };
+}
+/* Captura la siguiente tecla en fase de captura, ANTES que el listener
+   normal del juego (que va sin capture, en fase de burbuja) — así al
+   reasignar no se dispara de paso la acción vieja de esa tecla.       */
+addEventListener('keydown',e=>{
+  if(!reasignando)return;
+  e.preventDefault(); e.stopPropagation();
+  if(e.code==='Escape'||e.code==='ShiftLeft'||e.code==='ShiftRight'){ reasignando=null; pintarControles(); return; }
+  for(const a in BINDS) if(BINDS[a]===e.code && a!==reasignando) delete BINDS[a];
+  BINDS[reasignando]=e.code;
+  MAP=buildMap();
+  guardar();
+  reasignando=null;
+  pintarControles();
+},true);
 /* Si estás escribiendo en un campo de texto, el juego no toca el teclado.
    Antes W, A, S, D, Q, E... iban a las acciones del partido y nunca llegaban
    al input: por eso podías borrar el nombre del club pero no escribir otro. */
@@ -3511,6 +3564,7 @@ function pintarConf(){
   if(nav&&nav.querySelectorAll)nav.querySelectorAll('.tab').forEach(b=>b.onclick=()=>irTab(b.dataset.tab));
   irTab(tabActiva);
   pintarCantera();
+  pintarControles();
   const gb2=$v('bGuardar'), bb=$v('bBorrar'), sm=$v('saveMsg');
   if(gb2)gb2.onclick=()=>{ const ok=guardar();
     sm.textContent=ok?'Partida guardada en este navegador.':'No se pudo guardar: '+SAVE.aviso; };
@@ -3590,7 +3644,7 @@ function pintarPrev(){
     <b style="color:${MIEQUIPO.pal.main}">${MIEQUIPO.tag}</b> ${MIEQUIPO.name}`;
 }
 /* ── pestañas de configuración ── */
-const TABS=['tClub','tPlant','tTac','tPart','tDatos'];
+const TABS=['tClub','tPlant','tTac','tPart','tDatos','tControles'];
 let tabActiva='tClub';
 function irTab(id){
   tabActiva=id;
