@@ -142,6 +142,21 @@ function sustituir(t,idxCampo,fichaIdx){
   say(`🔄 ${t.tag}: entra ${np.num} ${np.name} por ${viejo.name}`, t.ai?'aw':'');
   return true;
 }
+/* Mover de posición a dos jugadores que YA están en el campo (p. ej. meter
+   a alguien de 9 aunque esté de extremo). Es táctica, no sustitución: no
+   gasta cambios. El portero queda excluido — cambiarle el rol a mitad de
+   partido rompería su comportamiento de IA y las medidas de su área.    */
+function moverPosicion(t,idxA,idxB){
+  if(!t||idxA===idxB)return false;
+  const a=t.players[idxA], b=t.players[idxB];
+  if(!a||!b||a.role==='GK'||b.role==='GK')return false;
+  [a.i,b.i]=[b.i,a.i];
+  [a.fx,b.fx]=[b.fx,a.fx];
+  [a.fy,b.fy]=[b.fy,a.fy];
+  [a.role,b.role]=[b.role,a.role];
+  say(`${t.tag}: ${a.name} y ${b.name} cambian de posición`, t.ai?'aw':'');
+  return true;
+}
 function expulsar(p,motivo){
   const t=p.team; p.rojo=true;
   const gi=S.players.indexOf(p); if(gi>=0)S.players.splice(gi,1);
@@ -3524,13 +3539,14 @@ function group(id,key,multi){
 group('optMode','mode');group('optDiff','diff');group('optForm','form');group('optLen','len');group('optRules',null,true);
 
 /* ══ NAVEGACIÓN, ALINEACIÓN Y COMPETICIONES ═══════════════ */
-const PANES=['pMain','pJugar','pAmis','pComp','pEntr','pConf','pPlantel','pCar'];
+const PANES=['pMain','pJugar','pAmis','pComp','pEntr','pAlineacionPre','pConf','pPlantel','pCar'];
 function irA(id){
   PANES.forEach(k=>{const e=$(k); if(e)e.classList.toggle('hide',k!==id);});
   if(id==='pConf')pintarConf();
   if(id==='pPlantel')pintarPlantel();
   if(id==='pCar')pintarCarrera();
   if(id==='pComp')pintarComp();
+  if(id==='pAlineacionPre')pintarAlineacionPre();
 }
 document.querySelectorAll('[data-ir]').forEach(b=>b.onclick=()=>irA(b.dataset.ir));
 cargar();      // recupera club, plantilla, ajustes y competición en curso
@@ -3563,7 +3579,6 @@ function pintarConf(){
   const nav=$v('confTabs');
   if(nav&&nav.querySelectorAll)nav.querySelectorAll('.tab').forEach(b=>b.onclick=()=>irTab(b.dataset.tab));
   irTab(tabActiva);
-  pintarCantera();
   pintarControles();
   const gb2=$v('bGuardar'), bb=$v('bBorrar'), sm=$v('saveMsg');
   if(gb2)gb2.onclick=()=>{ const ok=guardar();
@@ -3612,11 +3627,6 @@ function pintarConf(){
   po.innerHTML=Object.keys(PLANES).map(k=>
     `<button class="opt" data-v="${k}" aria-pressed="${k===S.miPlan?'true':'false'}">${PLANES[k].lbl}<small>${PLANES[k].d}</small></button>`).join('');
   po.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{S.miPlan=b.dataset.v;pintarConf();});
-  const xi=onceActual(), slots=DIBUJOS()[S.cfg.form]||[];
-  const fila=(f,i,pos,sel)=>`<div class="fila ${sel?'sel':''}" data-i="${i}">
-      <span class="pos">${pos}</span><span class="dor">${f.num}</span>
-      <span class="nom">${f.name}</span><span class="val">${valorDe(f)}</span></div>`;
-  pintarOnce('onceBox');
 }
 function pintarOnce(destino){
   const xi=onceActual(), slots=DIBUJOS()[S.cfg.form]||[];
@@ -3644,7 +3654,7 @@ function pintarPrev(){
     <b style="color:${MIEQUIPO.pal.main}">${MIEQUIPO.tag}</b> ${MIEQUIPO.name}`;
 }
 /* ── pestañas de configuración ── */
-const TABS=['tClub','tPlant','tTac','tPart','tDatos','tControles'];
+const TABS=['tClub','tTac','tPart','tDatos','tControles'];
 let tabActiva='tClub';
 function irTab(id){
   tabActiva=id;
@@ -3800,7 +3810,7 @@ function pintarCarrera(){
   if(!box.querySelector)return;
   const bj=$v('bJugarCar');
   if(bj)bj.onclick=()=>{ S.carRival=h.rival; S.compRival=null; S.cfg.mode='match';
-    $('menu').classList.add('hide'); resize(); newMatch(); };
+    pedirConfirmarAlineacion('pCar',()=>{ $('menu').classList.add('hide'); resize(); newMatch(); }); };
   const bs=$v('bSimCar');
   if(bs)bs.onclick=()=>{
     const r=h?simular(.5,h.rival.q):[0,0];
@@ -3855,9 +3865,20 @@ function pintarComp(){
   $v('bJugarComp').onclick=()=>{
     if(!h){cerrarJornada(0,0);pintarComp();return;}
     S.compRival=h.rival; S.cfg.mode='match';
-    $('menu').classList.add('hide'); resize(); newMatch();
+    pedirConfirmarAlineacion('pComp',()=>{ $('menu').classList.add('hide'); resize(); newMatch(); });
   };
 }
+/* Cualquier "JUGAR" de verdad (no entrenamiento, que recorta el
+   equipo aparte) pasa primero por confirmar alineación.         */
+let onConfirmarAlineacion=null, origenAlineacionPre='pMain';
+function pedirConfirmarAlineacion(origen,arrancar){
+  origenAlineacionPre=origen; onConfirmarAlineacion=arrancar;
+  irA('pAlineacionPre');
+}
+$('volverAlineacionPre').onclick=()=>{ onConfirmarAlineacion=null; irA(origenAlineacionPre); };
+$('btnConfirmarAlineacion').onclick=()=>{
+  if(onConfirmarAlineacion){ const f=onConfirmarAlineacion; onConfirmarAlineacion=null; f(); }
+};
 $('btnEntr').onclick=()=>{
   S.compRival=null;
   $('menu').classList.add('hide'); $('end').classList.add('hide');
@@ -3865,9 +3886,10 @@ $('btnEntr').onclick=()=>{
 };
 $('btnGo').onclick=()=>{
   S.compRival=null; S.cfg.mode='match';
-  $('menu').classList.add('hide');
-  $('end').classList.add('hide');
-  resize(); newMatch();
+  pedirConfirmarAlineacion('pAmis',()=>{
+    $('menu').classList.add('hide'); $('end').classList.add('hide');
+    resize(); newMatch();
+  });
 };
 $('btnAgain').onclick=()=>{
   $('end').classList.add('hide');
@@ -3913,14 +3935,17 @@ function scorersHTML(){
   return S.goals.map(g=>`<div><b>${g.min}'</b>${g.sc?g.sc.num+' '+g.sc.name:'—'}<span>${g.team.tag}</span>${g.own?' · en propia':(g.as?' · asist. '+g.as.name:'')}</div>`).join('')
     ||'<div style="opacity:.45">Sin goles todavía</div>';
 }
-/* ── ALINEACIÓN visual en pausa: cancha mini + banquillo, con
-   arrastre por puntero (mouse y táctil por igual). Reemplaza
-   a la lista de CAMBIOS de antes; usa la misma sustituir().  */
+/* ── ALINEACIÓN visual: cancha mini + banquillo, con arrastre por
+   puntero (mouse y táctil por igual). Una sola maquinaria de arrastre
+   (wireDrag) sirve para dos contextos con reglas distintas:
+   - en pausa (intentarSoltar): banco↔campo gasta un cambio real;
+     campo↔campo es táctica gratis (moverPosicion, sin límite).
+   - antes del partido (intentarSoltarPre): todo es libre, porque
+     el partido ni ha empezado — es solo planteamiento.          */
 let dragTok=null, dragOrigen=null, dragGhost=null, ultimoCambioIdx=-1;
 function moverGhost(e){ if(dragGhost){dragGhost.style.left=e.clientX+'px'; dragGhost.style.top=e.clientY+'px';} }
-function wireDrag(el,origen,num,esGK){
+function wireDrag(el,origen,num,esGK,onDrop){
   el.addEventListener('pointerdown',e=>{
-    const t=S.teams[0]; if(!t||t.cambios<=0)return;
     e.preventDefault();
     dragOrigen=origen; dragTok=el;
     try{el.setPointerCapture(e.pointerId);}catch(err){}
@@ -3937,23 +3962,30 @@ function wireDrag(el,origen,num,esGK){
     el.style.opacity='';
     if(dragGhost){dragGhost.remove();dragGhost=null;}
     const bajo=document.elementFromPoint(e.clientX,e.clientY);
-    intentarSoltar(bajo);
+    onDrop(bajo);
     dragTok=null; dragOrigen=null;
-    pintarAlineacion();
   };
   el.addEventListener('pointerup',soltar);
   el.addEventListener('pointercancel',soltar);
 }
 function intentarSoltar(destinoEl){
   if(!dragOrigen)return;
-  const t=S.teams[0]; if(!t)return;
+  const t=S.teams&&S.teams[0]; if(!t)return;
   const campoEl=destinoEl&&destinoEl.closest?destinoEl.closest('.lineup-token'):null;
   const bancoEl=destinoEl&&destinoEl.closest?destinoEl.closest('.bench-token'):null;
-  let idxCampo=null, fichaIdx=null;
-  if(dragOrigen.tipo==='banco'&&campoEl){ idxCampo=+campoEl.dataset.campoIdx; fichaIdx=dragOrigen.ficha; }
-  else if(dragOrigen.tipo==='campo'&&bancoEl){ idxCampo=dragOrigen.idx; fichaIdx=+bancoEl.dataset.fichaIdx; }
-  else return;
-  if(sustituir(t,idxCampo,fichaIdx)){ ultimoCambioIdx=idxCampo; guardar(); }
+  if(dragOrigen.tipo==='banco'&&campoEl){
+    if(t.cambios<=0)return;
+    const idxCampo=+campoEl.dataset.campoIdx;
+    if(sustituir(t,idxCampo,dragOrigen.ficha)){ ultimoCambioIdx=idxCampo; guardar(); }
+  }else if(dragOrigen.tipo==='campo'&&bancoEl){
+    if(t.cambios<=0)return;
+    const fichaIdx=+bancoEl.dataset.fichaIdx;
+    if(sustituir(t,dragOrigen.idx,fichaIdx)){ ultimoCambioIdx=dragOrigen.idx; guardar(); }
+  }else if(dragOrigen.tipo==='campo'&&campoEl){
+    const idxB=+campoEl.dataset.campoIdx;
+    if(moverPosicion(t,dragOrigen.idx,idxB)){ ultimoCambioIdx=idxB; guardar(); }
+  }
+  pintarAlineacion();
 }
 function pintarAlineacion(){
   const t=S.teams&&S.teams[0]; if(!t)return;
@@ -3961,7 +3993,7 @@ function pintarAlineacion(){
   if(!pitch||!bench)return;
   const cb=$v('pCambios'); if(cb)cb.textContent=t.cambios;
   const sinCambios=t.cambios<=0;
-  pitch.classList.toggle('sin-cambios',sinCambios);
+  pitch.classList.toggle('sin-cambios',false);   // campo↔campo siempre es libre aquí
   bench.classList.toggle('sin-cambios',sinCambios);
   pitch.innerHTML='<div class="midline"></div><div class="midcircle"></div>';
   t.players.forEach((p,i)=>{
@@ -3974,7 +4006,7 @@ function pintarAlineacion(){
     const lbl=document.createElement('span');
     lbl.className='lbl'; lbl.textContent=p.name.split(' ')[0];
     el.appendChild(lbl);
-    wireDrag(el,{tipo:'campo',idx:i},p.num,p.role==='GK');
+    wireDrag(el,{tipo:'campo',idx:i},p.num,p.role==='GK',intentarSoltar);
     pitch.appendChild(el);
   });
   ultimoCambioIdx=-1;
@@ -3987,7 +4019,64 @@ function pintarAlineacion(){
     el.textContent=f.num;
     el.title=f.name;
     el.dataset.fichaIdx=i;
-    wireDrag(el,{tipo:'banco',ficha:i},f.num,f.role==='GK');
+    wireDrag(el,{tipo:'banco',ficha:i},f.num,f.role==='GK',intentarSoltar);
+    bench.appendChild(el);
+  });
+}
+/* ── ALINEACIÓN antes del partido: misma cancha, pero libre del
+   todo — opera sobre S.miOnce (índices de ficha), no sobre
+   jugadores en vivo, porque el partido todavía no arranca.     */
+function intentarSoltarPre(destinoEl){
+  if(!dragOrigen)return;
+  const campoEl=destinoEl&&destinoEl.closest?destinoEl.closest('.lineup-token'):null;
+  const bancoEl=destinoEl&&destinoEl.closest?destinoEl.closest('.bench-token'):null;
+  const slots=DIBUJOS()[S.cfg.form]||[];
+  if(dragOrigen.tipo==='banco'&&campoEl){
+    const slotIdx=+campoEl.dataset.slotIdx;
+    if(!S.miOnce.includes(dragOrigen.ficha)) S.miOnce[slotIdx]=dragOrigen.ficha;
+  }else if(dragOrigen.tipo==='campo'&&bancoEl){
+    const fichaIdx=+bancoEl.dataset.fichaIdx;
+    if(!S.miOnce.includes(fichaIdx)) S.miOnce[dragOrigen.slot]=fichaIdx;
+  }else if(dragOrigen.tipo==='campo'&&campoEl){
+    const slotB=+campoEl.dataset.slotIdx;
+    const esGK=i=>slots[i]&&slots[i][0]==='GK';
+    if(slotB!==dragOrigen.slot&&!esGK(dragOrigen.slot)&&!esGK(slotB)){
+      [S.miOnce[dragOrigen.slot],S.miOnce[slotB]]=[S.miOnce[slotB],S.miOnce[dragOrigen.slot]];
+    }
+  }
+  guardar();
+  pintarAlineacionPre();
+}
+function pintarAlineacionPre(){
+  const pitch=$v('preLineupPitch'), bench=$v('preLineupBench');
+  if(!pitch||!bench)return;
+  const xi=onceActual(), slots=DIBUJOS()[S.cfg.form]||[];
+  pitch.innerHTML='<div class="midline"></div><div class="midcircle"></div>';
+  xi.forEach((fichaIdx,slotIdx)=>{
+    const f=S.miPlantilla[fichaIdx]; if(!f)return;
+    const sl=slots[slotIdx]||['MF',.4,.5], esGK=sl[0]==='GK';
+    const el=document.createElement('div');
+    el.className='lineup-token'+(esGK?' gk':'');
+    el.style.left=(clamp(sl[1],0,1)*100)+'%';
+    el.style.top=(clamp(sl[2],0,1)*100)+'%';
+    el.textContent=f.num;
+    el.dataset.slotIdx=slotIdx;
+    const lbl=document.createElement('span');
+    lbl.className='lbl'; lbl.textContent=(f.name||'').split(' ')[0];
+    el.appendChild(lbl);
+    wireDrag(el,{tipo:'campo',slot:slotIdx},f.num,esGK,intentarSoltarPre);
+    pitch.appendChild(el);
+  });
+  bench.innerHTML='';
+  const banquillo=S.miPlantilla.map((f,i)=>({f,i})).filter(x=>!xi.includes(x.i));
+  if(!banquillo.length){ bench.innerHTML='<span class="bench-empty">Sin suplentes disponibles</span>'; return; }
+  banquillo.forEach(({f,i})=>{
+    const el=document.createElement('div');
+    el.className='bench-token'+(f.role==='GK'?' gk':'');
+    el.textContent=f.num;
+    el.title=f.name;
+    el.dataset.fichaIdx=i;
+    wireDrag(el,{tipo:'banco',ficha:i},f.num,f.role==='GK',intentarSoltarPre);
     bench.appendChild(el);
   });
 }
