@@ -594,6 +594,103 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
   background:linear-gradient(120deg,transparent,rgba(255,255,255,.45),transparent);
   animation:sheen 3s ease-in-out infinite}
 .go:active{transform:scale(.985)}
+
+/* ══ AJUSTES — más jerarquía visual adentro ═══════════════ */
+.tsec h3{position:relative;padding-left:14px;font-size:9.5px}
+.tsec h3::before{content:'';position:absolute;left:0;top:50%;width:8px;height:8px;
+  margin-top:-4px;border-radius:2px;background:var(--home);transform:rotate(45deg)}
+
+.swatch{transition:transform .15s cubic-bezier(.2,.8,.2,1),box-shadow .15s}
+.swatch:hover{transform:scale(1.16)}
+.swatch[data-on="1"]{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--home)}
+
+.cprev{transition:box-shadow .2s}
+.club:has(input:focus) .cprev{box-shadow:0 0 0 2px rgba(255,47,142,.25)}
+
+.fila{position:relative;border-left:2px solid transparent}
+.fila:hover{border-left-color:var(--home);background:#f7f8fb}
+.fila.sel{border-left-color:var(--home)}
+
+.arq{position:relative;overflow:hidden}
+.arq::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--home);opacity:0;transition:opacity .15s}
+.arq:hover::before,.arq.on::before{opacity:1}
+
+.tab b{transition:transform .15s}
+.tab:hover b{transform:translateX(2px)}
+
+/* ══ HUD EN VIVO — minimalista, sin tarjetas blancas ══════
+   El resto del sitio (menús, ajustes) es de papel; el HUD que
+   flota SOBRE la cancha se queda en cristal oscuro traslúcido,
+   que se funde con el pasto en vez de competir contra él.    */
+.board,.minimap,.card{
+  background:rgba(8,18,13,.58)!important;
+  border:none!important;
+  box-shadow:0 6px 24px rgba(0,0,0,.32)!important;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.board .tag,.board .goals,.card .nm,.card .num{color:#f4f6f9!important}
+.board .goals{background:rgba(255,255,255,.08)}
+.board .clock{border-color:rgba(255,255,255,.12)!important;color:#f4f6f9!important}
+.board .clock small,.card .pos{color:rgba(244,246,249,.55)!important}
+.card .stam .bar,.meter .bar{background:rgba(255,255,255,.12)}
+.minimap .meter .lbl{color:rgba(244,246,249,.55)}
+.minimap .meter .lbl b{color:#f4f6f9}
+#radar{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1)}
+.card{padding:8px 12px;min-width:170px}
+.card .who{gap:7px}
+.card .num{font-size:18px}
+.card .stam{margin-top:5px}
+
+.hint{background:rgba(8,18,13,.58)!important;border:none!important;
+  box-shadow:0 4px 16px rgba(0,0,0,.28)!important;backdrop-filter:blur(10px)}
+.hint,.hint b{color:rgba(244,246,249,.7)!important}
+.hint b{background:rgba(255,255,255,.1)!important;border:none!important;color:#f4f6f9!important}
+
+/* feed más discreto: la información importante (goles, tarjetas)
+   ya se anuncia con flash() en grande al centro de la pantalla —
+   el feed no necesita gritar también                            */
+.feed{width:190px}
+.feed div{background:rgba(8,18,13,.5)!important;border-left:2px solid var(--home)!important;
+  color:rgba(244,246,249,.68)!important;font-size:10px;padding:4px 7px;
+  box-shadow:0 2px 8px rgba(0,0,0,.22)}
+.feed div.aw{border-left-color:var(--away)!important}
+.feed div.nt{border-left-color:#ffd166!important}
+.feed div b{color:rgba(244,246,249,.4)!important}
+
+/* ══ ALINEACIÓN EN PAUSA — cancha mini + banquillo con arrastre ══ */
+.lineup-pitch{position:relative;width:100%;aspect-ratio:100/64;
+  background:linear-gradient(180deg,#173821,#0f2a1c);border-radius:8px;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.lineup-pitch .midline{position:absolute;left:50%;top:4%;bottom:4%;width:1px;background:rgba(255,255,255,.22)}
+.lineup-pitch .midcircle{position:absolute;left:50%;top:50%;width:16%;aspect-ratio:1;
+  border:1px solid rgba(255,255,255,.22);border-radius:50%;transform:translate(-50%,-50%)}
+.lineup-token{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-weight:700;font-size:11px;color:#fff;
+  background:var(--home);border:2px solid rgba(255,255,255,.75);cursor:grab;
+  box-shadow:0 3px 8px rgba(0,0,0,.35);touch-action:none;user-select:none;transition:opacity .15s}
+.lineup-token.gk{background:#ffd166;color:#3a2c06}
+.lineup-token .lbl{position:absolute;top:33px;left:50%;transform:translateX(-50%);
+  font-family:'Archivo';font-weight:700;font-size:8px;color:#fff;white-space:nowrap;
+  background:rgba(0,0,0,.55);padding:1px 4px;border-radius:2px;pointer-events:none}
+.lineup-token.swap{animation:swapPulse .55s ease-out}
+@keyframes swapPulse{0%{box-shadow:0 0 0 0 rgba(255,47,142,.75)}100%{box-shadow:0 0 0 18px rgba(255,47,142,0)}}
+.lineup-bench{display:flex;gap:9px;flex-wrap:wrap;margin-top:9px;padding:11px;
+  background:#f7f8fb;border:1px solid var(--borde);border-radius:8px;min-height:52px}
+.bench-token{position:relative;width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';
+  font-weight:700;font-size:11px;color:var(--ink);background:#fff;border:2px solid var(--borde);
+  cursor:grab;touch-action:none;user-select:none;transition:opacity .15s}
+.bench-empty{font-size:10.5px;color:var(--ink-dim);padding:7px;align-self:center}
+.lineup-pitch.sin-cambios .lineup-token,.lineup-bench.sin-cambios .bench-token{
+  cursor:not-allowed;opacity:.5}
+.drag-ghost{position:fixed;top:0;left:0;width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';
+  font-weight:700;font-size:11px;color:#fff;background:var(--home);
+  border:2px solid rgba(255,255,255,.85);box-shadow:0 8px 20px rgba(0,0,0,.4);
+  pointer-events:none;z-index:999;transform:translate(-50%,-50%) scale(1.18)}
+.drag-ghost.gk{background:#ffd166;color:#3a2c06}
 </style>
 </head>
 <body>
@@ -619,7 +716,6 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
   <div class="card" id="card">
     <div class="who"><span class="num" id="pNum">66</span><span class="nm" id="pName">SANCHO</span><span class="pos" id="pPos">DEL</span></div>
     <div class="stam"><div class="bar"><div class="fill" id="pStam"></div></div></div>
-    <div class="attrs"><span>VEL <b id="aPac">—</b></span><span>CTR <b id="aCtl">—</b></span><span>PAS <b id="aPas">—</b></span><span>TIR <b id="aSho">—</b></span><span>⚽ <b id="pGls">0</b></span></div>
   </div>
 
   <div class="hint" id="hint"></div>
@@ -701,12 +797,12 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
         <div class="volver" data-ir="pMain">‹ volver</div>
         <div class="confwrap">
           <nav class="tabs" id="confTabs">
-            <button class="tab" data-tab="tClub" aria-pressed="true"><b>Club</b><span>nombre, colores y cantera</span></button>
-            <button class="tab" data-tab="tPlant"><b>Plantilla</b><span>once inicial y suplentes</span></button>
-            <button class="tab" data-tab="tTac"><b>Táctica</b><span>dibujo y planteamiento</span></button>
-            <button class="tab" data-tab="tPart"><b>Partido</b><span>modalidad, cancha y reglas</span></button>
-            <button class="tab" data-tab="tDatos"><b>Partida</b><span>guardado</span></button>
-            <button class="tab" data-tab="tControles"><b>Controles</b><span>teclas de mando</span></button>
+            <button class="tab" data-tab="tClub" aria-pressed="true"><b>🎨 Club</b><span>nombre, colores y cantera</span></button>
+            <button class="tab" data-tab="tPlant"><b>👕 Plantilla</b><span>once inicial y suplentes</span></button>
+            <button class="tab" data-tab="tTac"><b>📋 Táctica</b><span>dibujo y planteamiento</span></button>
+            <button class="tab" data-tab="tPart"><b>🥅 Partido</b><span>modalidad, cancha y reglas</span></button>
+            <button class="tab" data-tab="tDatos"><b>💾 Partida</b><span>guardado</span></button>
+            <button class="tab" data-tab="tControles"><b>⌨️ Controles</b><span>teclas de mando</span></button>
           </nav>
           <div class="tabcont">
 
@@ -820,12 +916,13 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
 
   <!-- pausa -->
   <div class="screen hide" id="pause">
-    <div class="sheet" style="text-align:center;width:min(430px,92vw)">
+    <div class="sheet" style="text-align:center;width:min(600px,94vw)">
       <div class="kicker">PARTIDO DETENIDO</div>
-      <h1 style="font-size:clamp(30px,7vw,52px)">PAUSA</h1>
-      <div id="pauseScore" style="font-family:'Archivo Black';font-size:30px;margin:2px 0 4px"></div>
-      <div id="pauseMin" style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-bottom:16px"></div>
-      <table class="stats">
+      <h1 style="font-size:clamp(28px,6vw,44px)">PAUSA</h1>
+      <div id="pauseScore" style="font-family:'Archivo Black';font-size:28px;margin:2px 0 4px"></div>
+      <div id="pauseMin" style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-bottom:14px"></div>
+      <div id="pauseJugador" style="text-align:left"></div>
+      <table class="stats" style="margin-top:14px">
         <tr><td id="sPosH">50</td><td>POSESIÓN %</td><td id="sPosA">50</td></tr>
         <tr><td id="sShH">0</td><td>REMATES</td><td id="sShA">0</td></tr>
         <tr><td id="sSoH">0</td><td>A PUERTA</td><td id="sSoA">0</td></tr>
@@ -835,8 +932,10 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
         <tr><td id="sCoH">0</td><td>CÓRNERS</td><td id="sCoA">0</td></tr>
       </table>
       <div class="grp" style="margin-top:16px;text-align:left">
-        <label>CAMBIOS — te quedan <b id="pCambios">3</b></label>
-        <div id="subsBox" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+        <label>ALINEACIÓN — cambios disponibles: <b id="pCambios">3</b></label>
+        <p class="ayuda" style="margin:5px 0 9px">Arrastra un jugador del banquillo sobre uno del campo (o al revés) para cambiarlos.</p>
+        <div id="lineupPitch" class="lineup-pitch"></div>
+        <div id="lineupBench" class="lineup-bench"></div>
       </div>
       <div class="scorers" id="pauseScorers" style="margin-top:16px"></div>
       <div class="tune">
