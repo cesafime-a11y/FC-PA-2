@@ -77,7 +77,7 @@ const S={
   possTick:[0,0], stats:null, ctrl:null, switchCd:0,
   charge:0, charging:false, passHold:0, passing:false, noPress:0, deadline:0,
   mouse:{sx:0,sy:0,on:false}, view:null, zoom:1, goals:[], lastPass:null,
-  hudOn:true, switchLock:0, cycleT:0, recent:[],
+  hudOn:true, hintOn:true, switchLock:0, cycleT:0, recent:[],
   tune:{pow:1, cone:1, sw:1, q:1}
 };
 
@@ -2735,13 +2735,18 @@ function hud(dt){
     setTxt('aSho',Math.round(p.a.sho));
     setTxt('pGls',p.goals);
   }
-  if(S.tanda){
-    const T=S.tanda, m=i=>T.marcas[i].map(x=>x?'●':'○').join(' ')||'—';
-    setTxt('clock',T.marcas[0].reduce((a,b)=>a+b,0)+' - '+T.marcas[1].reduce((a,b)=>a+b,0));
-    setTxt('period','PENALTIS · tira '+S.teams[tandaTurno()].tag);
-    $('hint').innerHTML='<b>'+S.teams[0].tag+'</b> '+m(0)+' &nbsp;·&nbsp; <b>'+S.teams[1].tag+'</b> '+m(1)+
-      (tandaTurno()===0?' &nbsp;— <b>clic izq</b> para tirar':' &nbsp;— tira el rival');
-  } else $('hint').innerHTML=hintText();
+  if(!S.hintOn){
+    $('hint').style.display='none';
+  } else {
+    $('hint').style.display='';
+    if(S.tanda){
+      const T=S.tanda, m=i=>T.marcas[i].map(x=>x?'●':'○').join(' ')||'—';
+      setTxt('clock',T.marcas[0].reduce((a,b)=>a+b,0)+' - '+T.marcas[1].reduce((a,b)=>a+b,0));
+      setTxt('period','PENALTIS · tira '+S.teams[tandaTurno()].tag);
+      $('hint').innerHTML='<b>'+S.teams[0].tag+'</b> '+m(0)+' &nbsp;·&nbsp; <b>'+S.teams[1].tag+'</b> '+m(1)+
+        (tandaTurno()===0?' &nbsp;— <b>clic izq</b> para tirar':' &nbsp;— tira el rival');
+    } else $('hint').innerHTML=hintText();
+  }
   hudFade();
   drawRadar();
 }
@@ -3605,8 +3610,8 @@ function irPTab(id){
     b.setAttribute('aria-pressed',String(b.dataset.ptab===id)));
 }
 const nomArq=id=>{const a=ARQUETIPOS.find(x=>x.id===id);return a?a.n:'CLÁSICO';};
-function pintarFichas(destino){
-  const box=$v(destino||'fichasBox'); if(!box)return;
+function pintarFichas(){
+  const box=$v('fichasBox'); if(!box)return;
   const xi=onceActual();
   box.innerHTML=S.miPlantilla.map((f,i)=>{
     const tit=xi.includes(i);
@@ -3632,9 +3637,8 @@ function pintarPlantel(){
   pintarOnce('onceBox2');
   pintarCantera();
 }
-function pintarCantera(destino){
-  destino=destino||'canteraBox';
-  const box=$v(destino); if(!box)return;
+function pintarCantera(){
+  const box=$v('canteraBox'); if(!box)return;
   const sel=CANTERA.arq, selR=CANTERA.rasgo;
   const prev=fichaDeArquetipo(sel,selR,CANTERA.nombre,CANTERA.dorsal);
   box.innerHTML=
@@ -3660,66 +3664,17 @@ function pintarCantera(destino){
      <button class="go" id="bFichar" style="margin-top:12px" ${S.miPlantilla.length>=24?'disabled':''}>
        ${S.miPlantilla.length>=24?'PLANTILLA LLENA (24)':'AÑADIR A LA PLANTILLA ('+S.miPlantilla.length+'/24)'}</button>`;
   if(!box.querySelectorAll)return;
-  box.querySelectorAll('[data-arq]').forEach(b=>b.onclick=()=>{CANTERA.arq=b.dataset.arq;pintarCantera(destino);});
-  box.querySelectorAll('[data-rasgo]').forEach(b=>b.onclick=()=>{CANTERA.rasgo=b.dataset.rasgo;pintarCantera(destino);});
-  const nm=box.querySelector('#cvNom'), nu=box.querySelector('#cvNum');
+  box.querySelectorAll('[data-arq]').forEach(b=>b.onclick=()=>{CANTERA.arq=b.dataset.arq;pintarCantera();});
+  box.querySelectorAll('[data-rasgo]').forEach(b=>b.onclick=()=>{CANTERA.rasgo=b.dataset.rasgo;pintarCantera();});
+  const nm=$v('cvNom'), nu=$v('cvNum');
   if(nm)nm.oninput=()=>{CANTERA.nombre=nm.value;};
   if(nu)nu.oninput=()=>{CANTERA.dorsal=clamp(parseInt(nu.value)||20,1,99);};
-  const bf=box.querySelector('#bFichar');
+  const bf=$v('bFichar');
   if(bf)bf.onclick=()=>{
     if(S.miPlantilla.length>=24)return;
     S.miPlantilla.push(fichaDeArquetipo(CANTERA.arq,CANTERA.rasgo,CANTERA.nombre,CANTERA.dorsal));
-    CANTERA.nombre=''; S.miOnce=null; guardar();
-    if(destino==='canteraBox') pintarPlantel();
-    else { pintarCantera(destino); if($v('pFichasBox'))pintarFichas('pFichasBox'); }
+    CANTERA.nombre=''; S.miOnce=null; guardar(); pintarPlantel();
   };
-}
-/* Versión de solo lectura de la carrera, para consultar dentro de la pausa
-   sin exponer los botones JUGAR/SIMULAR — no tiene sentido "jugar el
-   siguiente partido de la liga" mientras ya estás jugando uno.        */
-function pintarCarreraResumen(destino){
-  const box=$v(destino); if(!box)return;
-  if(!CAR){
-    box.innerHTML=`<p class="ayuda">Aún no arrancas el modo Carrera. Ve al menú principal → Carrera para empezarla.</p>`;
-    return;
-  }
-  const yo=miCar(), orden=clasificacion(), eq=CAR.divs[CAR.div];
-  const pos=orden.findIndex(t=>t.i===yo)+1;
-  const enCopa=CAR.fase==='copa';
-  let html=`<div class="carhead">
-      <div><small>TEMPORADA</small><b>${CAR.temporada}</b></div>
-      <div><small>DIVISIÓN</small><b>${DIVS[CAR.div]}</b></div>
-      <div><small>POSICIÓN</small><b>${pos}.º</b></div>
-      <div class="obj"><small>OBJETIVO DEL CLUB</small><b>${CAR.objetivo}</b></div>
-    </div>`;
-  if(enCopa){
-    html+='<h3 class="secttl">COPA · '+(RONDAS_CAR[CAR.copa.ronda]||'')+'</h3>';
-    html+='<table class="liga">'+CAR.copa.cr.map(c=>
-      `<tr class="${c.includes(yo)?'yo':''}"><td></td><td>${eq[c[0]].name} — ${eq[c[1]].name}</td></tr>`).join('')+'</table>';
-  }else{
-    html+='<h3 class="secttl">CLASIFICACIÓN</h3>';
-    html+='<table class="liga"><tr><th>#</th><th>EQUIPO</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>PTS</th></tr>'+
-      orden.map((t,k)=>`<tr class="${eq[t.i].yo?'yo':''}${k<2?' asc':''}${k>=6?' desc':''}">
-        <td>${k+1}</td><td>${eq[t.i].name}</td><td>${t.pj}</td><td>${t.g}</td><td>${t.e}</td>
-        <td>${t.p}</td><td>${t.gf}</td><td>${t.gc}</td><td>${t.pts}</td></tr>`).join('')+'</table>';
-  }
-  const gol=Object.entries(CAR.goleadores||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  if(gol.length)html+='<p class="ayuda"><b>Tus goleadores:</b> '+gol.map(g=>g[0]+' '+g[1]).join(' · ')+'</p>';
-  html+='<p class="ayuda" style="margin-top:10px">Termina este partido para seguir avanzando la carrera.</p>';
-  box.innerHTML=html;
-}
-/* pestañas de la pausa */
-const PAUSE_TABS=['pPartido','pPlantelT','pCanteraT','pCarreraT','pAjustesT'];
-let pauseTabActiva='pPartido';
-function irPauseTab(id){
-  pauseTabActiva=id;
-  PAUSE_TABS.forEach(k=>{const e=$v(k); if(e)e.classList.toggle('hide',k!==id);});
-  const nav=$v('pauseTabs');
-  if(nav&&nav.querySelectorAll)nav.querySelectorAll('.tab').forEach(b=>
-    b.setAttribute('aria-pressed',String(b.dataset.ptab===id)));
-  if(id==='pPlantelT')pintarFichas('pFichasBox');
-  if(id==='pCanteraT')pintarCantera('pCanteraBox');
-  if(id==='pCarreraT')pintarCarreraResumen('pCarBox');
 }
 /* ── pantalla de carrera ── */
 function pintarCarrera(){
@@ -3923,6 +3878,13 @@ function scorersHTML(){
     DPRCAP=[1,1.5,2][v]||1.5; lowFX=(v===0);
     if(typeof resize==='function')resize();
   });
+  const oh=$('optHint');
+  if(oh) oh.addEventListener('click',e=>{
+    const b=e.target.closest('.opt'); if(!b)return;
+    [...oh.children].forEach(c=>c.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    S.hintOn = b.dataset.v==='1';
+  });
 })();
 function togglePause(){
   if(!S.running)return;
@@ -3938,9 +3900,6 @@ function togglePause(){
       `${Math.floor((S.half-1)*45+S.clock/60)}' · ${S.half===1?'1.ª':'2.ª'} parte · dificultad ${S.D.lbl}`;
     $('pauseScorers').innerHTML=scorersHTML();
     pintarCambios();
-    const pnav=$v('pauseTabs');
-    if(pnav&&pnav.querySelectorAll)pnav.querySelectorAll('.tab').forEach(b=>b.onclick=()=>irPauseTab(b.dataset.ptab));
-    irPauseTab('pPartido');
   }
   $('pause').classList.toggle('hide',!S.pausedFlag);
 }
