@@ -533,6 +533,40 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
 .tbtn{background:#fff;border-color:#dde2ea;color:#141820}
 .tbtn:hover{background:var(--home);color:#fff}
 .slot{border-color:#dde2ea;color:#5d6675;background:#fff}
+
+/* ══ MENÚ PRINCIPAL — aire nuevo ══════════════════════════
+   Un botón principal (JUGAR) con jerarquía clara, y el resto
+   en una rejilla de tarjetas chicas en vez de una lista de
+   botones idénticos. Carrera/Plantel/PA League quedan como
+   vista previa de lo que viene — deshabilitadas de verdad,
+   no solo apagadas visualmente.                             */
+.hero-cta{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;
+  width:100%;text-align:left;padding:22px 26px;margin-bottom:10px;border:0;border-radius:8px;
+  background:linear-gradient(120deg,var(--home),#ff6fb0);color:#fff;cursor:pointer;
+  box-shadow:0 8px 24px rgba(255,47,142,.28)}
+.hero-cta::after{content:'';position:absolute;top:0;bottom:0;left:-20%;width:70px;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.45),transparent);
+  animation:sheen 3.4s ease-in-out infinite}
+@keyframes sheen{0%{left:-20%}55%,100%{left:120%}}
+.hero-cta:hover{filter:brightness(1.05)}
+.hero-cta b{display:block;font-family:'Archivo Black';font-size:26px;letter-spacing:.01em;position:relative}
+.hero-cta .tag{display:block;font-size:12px;font-weight:600;opacity:.88;margin-top:2px;position:relative}
+.hero-cta .flecha{margin-left:auto;font-size:28px;position:relative}
+
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.mcard2{position:relative;background:#fff;border:1px solid var(--borde);
+  border-radius:8px;padding:16px;text-align:left;color:var(--ink);cursor:pointer;
+  transition:.14s;box-shadow:0 1px 2px rgba(20,30,50,.05)}
+.mcard2:hover{border-color:var(--home);box-shadow:0 6px 18px rgba(255,47,142,.12);transform:translateY(-2px)}
+.mcard2 b{display:block;font-family:'Archivo Black';font-size:14px;letter-spacing:.02em;color:#0d1017}
+.mcard2 .tag{display:block;font-size:10.5px;color:var(--ink-dim);margin-top:3px;line-height:1.35}
+.mcard2.proximo{cursor:not-allowed;opacity:.6}
+.mcard2.proximo:hover{border-color:var(--borde);box-shadow:0 1px 2px rgba(20,30,50,.05);transform:none}
+.mcard2 .ribbon{position:absolute;top:8px;right:8px;font-family:'JetBrains Mono';font-size:8px;
+  letter-spacing:.12em;color:var(--home);border:1px solid rgba(255,47,142,.35);
+  border-radius:2px;padding:2px 5px;background:rgba(255,47,142,.06);
+  animation:pulseRibbon 2.4s ease-in-out infinite}
+@keyframes pulseRibbon{0%,100%{opacity:.6}50%{opacity:1}}
 </style>
 </head>
 <body>
@@ -582,11 +616,20 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
       <h1>FC&nbsp;<em>PA</em></h1>
 
       <div class="pane" id="pMain">
-        <p class="sub">Once contra once con física completa: el balón pesa, el rival aprieta y la resistencia se acaba.</p>
-        <button class="big" data-ir="pJugar"><span class="bigtxt"><b>JUGAR</b><span>partido rápido, competición o entrenamiento</span></span><span class="flecha">›</span></button>
-        <button class="big" data-ir="pCar"><span class="bigtxt"><b>CARRERA</b><span>temporadas, ascensos y cantera</span></span><span class="flecha">›</span></button>
-        <button class="big" data-ir="pPlantel"><span class="bigtxt"><b>PLANTEL</b><span>tus jugadores y su progreso</span></span><span class="flecha">›</span></button>
-        <button class="big" data-ir="pConf"><span class="bigtxt"><b>AJUSTES</b><span>club, táctica, partido y guardado</span></span><span class="flecha">›</span></button>
+        <p class="sub" style="margin-bottom:16px">Once contra once, física real. El balón pesa y la resistencia se acaba.</p>
+        <button class="hero-cta" data-ir="pJugar">
+          <span style="flex:1">
+            <b>JUGAR</b>
+            <span class="tag">Partido rápido, competición o entrenamiento</span>
+          </span>
+          <span class="flecha">›</span>
+        </button>
+        <div class="menu-grid">
+          <button class="mcard2 proximo" disabled><span class="ribbon">PRÓXIMO</span><b>CARRERA</b><span class="tag">Temporadas y ascensos</span></button>
+          <button class="mcard2 proximo" disabled><span class="ribbon">PRÓXIMO</span><b>PLANTEL</b><span class="tag">Tu equipo, tu cantera</span></button>
+          <button class="mcard2 proximo" disabled><span class="ribbon">PRÓXIMO</span><b>PA LEAGUE</b><span class="tag">Multijugador 1 vs 1</span></button>
+          <button class="mcard2" data-ir="pConf"><b>AJUSTES</b><span class="tag">Club, táctica y partido</span></button>
+        </div>
       </div>
 
       <div class="pane hide" id="pJugar">
@@ -759,70 +802,44 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
 
   <!-- pausa -->
   <div class="screen hide" id="pause">
-    <div class="sheet" style="text-align:center;width:min(700px,94vw)">
+    <div class="sheet" style="text-align:center;width:min(430px,92vw)">
       <div class="kicker">PARTIDO DETENIDO</div>
-      <h1 style="font-size:clamp(28px,6vw,44px)">PAUSA</h1>
-      <div id="pauseScore" style="font-family:'Archivo Black';font-size:26px;margin:2px 0 4px"></div>
-      <div id="pauseMin" style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-bottom:14px"></div>
-
-      <div class="confwrap" style="text-align:left">
-        <nav class="tabs" id="pauseTabs">
-          <button class="tab" data-ptab="pPartido" aria-pressed="true"><b>Partido</b><span>marcador y cambios</span></button>
-          <button class="tab" data-ptab="pPlantelT"><b>Plantel</b><span>tus jugadores ahora</span></button>
-          <button class="tab" data-ptab="pCanteraT"><b>Cantera</b><span>ficha uno nuevo</span></button>
-          <button class="tab" data-ptab="pCarreraT"><b>Carrera</b><span>tabla y progreso</span></button>
-          <button class="tab" data-ptab="pAjustesT"><b>Ajustes</b><span>tacto y gráficos</span></button>
-        </nav>
-        <div class="tabcont">
-
-          <section class="tsec" id="pPartido">
-            <table class="stats">
-              <tr><td id="sPosH">50</td><td>POSESIÓN %</td><td id="sPosA">50</td></tr>
-              <tr><td id="sShH">0</td><td>REMATES</td><td id="sShA">0</td></tr>
-              <tr><td id="sSoH">0</td><td>A PUERTA</td><td id="sSoA">0</td></tr>
-              <tr><td id="sPaH">0</td><td>PASES OK</td><td id="sPaA">0</td></tr>
-              <tr><td id="sFoH">0</td><td>FALTAS</td><td id="sFoA">0</td></tr>
-              <tr><td id="sYcH">0</td><td>AMARILLAS</td><td id="sYcA">0</td></tr>
-              <tr><td id="sCoH">0</td><td>CÓRNERS</td><td id="sCoA">0</td></tr>
-            </table>
-            <div class="grp" style="margin-top:16px">
-              <label>CAMBIOS — te quedan <b id="pCambios">3</b></label>
-              <div id="subsBox" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
-            </div>
-            <div class="scorers" id="pauseScorers" style="margin-top:16px"></div>
-          </section>
-
-          <section class="tsec hide" id="pPlantelT">
-            <p class="ayuda">Tu plantilla tal como está ahora. Los cambios de titularidad se hacen desde la pestaña Partido.</p>
-            <div id="pFichasBox"></div>
-          </section>
-
-          <section class="tsec hide" id="pCanteraT">
-            <p class="ayuda">Ficha un jugador sin salir del partido — entra a la plantilla para partidos futuros, no al que ya empezó.</p>
-            <div id="pCanteraBox"></div>
-          </section>
-
-          <section class="tsec hide" id="pCarreraT">
-            <div id="pCarBox"></div>
-          </section>
-
-          <section class="tsec hide" id="pAjustesT">
-            <div class="tune" style="border-top:0;padding-top:0">
-              <label>Fuerza del pase <b id="tvPow">100%</b>
-                <input type="range" id="tPow" min="70" max="170" value="100"></label>
-              <label>Asistencia de puntería <b id="tvCone">normal</b>
-                <input type="range" id="tCone" min="40" max="220" value="100"></label>
-              <label>Cambio automático <b id="tvSw">normal</b>
-                <input type="range" id="tSw" min="0" max="2" step="1" value="1"></label>
-              <label>Calidad gráfica <b id="tvQ">normal</b>
-                <input type="range" id="tQ" min="0" max="2" step="1" value="1"></label>
-            </div>
-          </section>
-
+      <h1 style="font-size:clamp(30px,7vw,52px)">PAUSA</h1>
+      <div id="pauseScore" style="font-family:'Archivo Black';font-size:30px;margin:2px 0 4px"></div>
+      <div id="pauseMin" style="font-family:'JetBrains Mono';font-size:11px;color:var(--ink-dim);margin-bottom:16px"></div>
+      <table class="stats">
+        <tr><td id="sPosH">50</td><td>POSESIÓN %</td><td id="sPosA">50</td></tr>
+        <tr><td id="sShH">0</td><td>REMATES</td><td id="sShA">0</td></tr>
+        <tr><td id="sSoH">0</td><td>A PUERTA</td><td id="sSoA">0</td></tr>
+        <tr><td id="sPaH">0</td><td>PASES OK</td><td id="sPaA">0</td></tr>
+        <tr><td id="sFoH">0</td><td>FALTAS</td><td id="sFoA">0</td></tr>
+        <tr><td id="sYcH">0</td><td>AMARILLAS</td><td id="sYcA">0</td></tr>
+        <tr><td id="sCoH">0</td><td>CÓRNERS</td><td id="sCoA">0</td></tr>
+      </table>
+      <div class="grp" style="margin-top:16px;text-align:left">
+        <label>CAMBIOS — te quedan <b id="pCambios">3</b></label>
+        <div id="subsBox" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+      </div>
+      <div class="scorers" id="pauseScorers" style="margin-top:16px"></div>
+      <div class="tune">
+        <div class="kicker" style="margin-bottom:12px">AJUSTA EL TACTO A TU GUSTO</div>
+        <label>Fuerza del pase <b id="tvPow">100%</b>
+          <input type="range" id="tPow" min="70" max="170" value="100"></label>
+        <label>Asistencia de puntería <b id="tvCone">normal</b>
+          <input type="range" id="tCone" min="40" max="220" value="100"></label>
+        <label>Cambio automático <b id="tvSw">normal</b>
+          <input type="range" id="tSw" min="0" max="2" step="1" value="1"></label>
+        <label>Calidad gráfica <b id="tvQ">normal</b>
+          <input type="range" id="tQ" min="0" max="2" step="1" value="1"></label>
+        <div class="grp" style="margin-top:4px">
+          <label style="display:block;font-size:11px;color:var(--ink-dim);margin-bottom:7px;letter-spacing:.04em">Guía de controles en pantalla</label>
+          <div class="opts" id="optHint">
+            <button class="opt" data-v="1" aria-pressed="true">Mostrar</button>
+            <button class="opt" data-v="0" aria-pressed="false">Ocultar</button>
+          </div>
         </div>
       </div>
-
-      <button class="go" id="btnResume" style="margin-top:16px">SEGUIR JUGANDO</button>
+      <button class="go" id="btnResume">SEGUIR JUGANDO</button>
       <button class="go" id="btnQuit" style="background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:8px">SALIR AL MENÚ</button>
     </div>
   </div>
