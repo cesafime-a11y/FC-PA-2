@@ -3913,6 +3913,98 @@ function scorersHTML(){
   return S.goals.map(g=>`<div><b>${g.min}'</b>${g.sc?g.sc.num+' '+g.sc.name:'—'}<span>${g.team.tag}</span>${g.own?' · en propia':(g.as?' · asist. '+g.as.name:'')}</div>`).join('')
     ||'<div style="opacity:.45">Sin goles todavía</div>';
 }
+/* ── ALINEACIÓN visual en pausa: cancha mini + banquillo, con
+   arrastre por puntero (mouse y táctil por igual). Reemplaza
+   a la lista de CAMBIOS de antes; usa la misma sustituir().  */
+let dragTok=null, dragOrigen=null, dragGhost=null, ultimoCambioIdx=-1;
+function moverGhost(e){ if(dragGhost){dragGhost.style.left=e.clientX+'px'; dragGhost.style.top=e.clientY+'px';} }
+function wireDrag(el,origen,num,esGK){
+  el.addEventListener('pointerdown',e=>{
+    const t=S.teams[0]; if(!t||t.cambios<=0)return;
+    e.preventDefault();
+    dragOrigen=origen; dragTok=el;
+    try{el.setPointerCapture(e.pointerId);}catch(err){}
+    el.style.opacity='.35';
+    dragGhost=document.createElement('div');
+    dragGhost.className='drag-ghost'+(esGK?' gk':'');
+    dragGhost.textContent=num;
+    document.body.appendChild(dragGhost);
+    moverGhost(e);
+  });
+  el.addEventListener('pointermove',e=>{ if(dragTok===el) moverGhost(e); });
+  const soltar=e=>{
+    if(dragTok!==el)return;
+    el.style.opacity='';
+    if(dragGhost){dragGhost.remove();dragGhost=null;}
+    const bajo=document.elementFromPoint(e.clientX,e.clientY);
+    intentarSoltar(bajo);
+    dragTok=null; dragOrigen=null;
+    pintarAlineacion();
+  };
+  el.addEventListener('pointerup',soltar);
+  el.addEventListener('pointercancel',soltar);
+}
+function intentarSoltar(destinoEl){
+  if(!dragOrigen)return;
+  const t=S.teams[0]; if(!t)return;
+  const campoEl=destinoEl&&destinoEl.closest?destinoEl.closest('.lineup-token'):null;
+  const bancoEl=destinoEl&&destinoEl.closest?destinoEl.closest('.bench-token'):null;
+  let idxCampo=null, fichaIdx=null;
+  if(dragOrigen.tipo==='banco'&&campoEl){ idxCampo=+campoEl.dataset.campoIdx; fichaIdx=dragOrigen.ficha; }
+  else if(dragOrigen.tipo==='campo'&&bancoEl){ idxCampo=dragOrigen.idx; fichaIdx=+bancoEl.dataset.fichaIdx; }
+  else return;
+  if(sustituir(t,idxCampo,fichaIdx)){ ultimoCambioIdx=idxCampo; guardar(); }
+}
+function pintarAlineacion(){
+  const t=S.teams&&S.teams[0]; if(!t)return;
+  const pitch=$v('lineupPitch'), bench=$v('lineupBench');
+  if(!pitch||!bench)return;
+  const cb=$v('pCambios'); if(cb)cb.textContent=t.cambios;
+  const sinCambios=t.cambios<=0;
+  pitch.classList.toggle('sin-cambios',sinCambios);
+  bench.classList.toggle('sin-cambios',sinCambios);
+  pitch.innerHTML='<div class="midline"></div><div class="midcircle"></div>';
+  t.players.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.className='lineup-token'+(p.role==='GK'?' gk':'')+(i===ultimoCambioIdx?' swap':'');
+    el.style.left=(clamp(p.fx,0,1)*100)+'%';
+    el.style.top=(clamp(p.fy,0,1)*100)+'%';
+    el.textContent=p.num;
+    el.dataset.campoIdx=i;
+    const lbl=document.createElement('span');
+    lbl.className='lbl'; lbl.textContent=p.name.split(' ')[0];
+    el.appendChild(lbl);
+    wireDrag(el,{tipo:'campo',idx:i},p.num,p.role==='GK');
+    pitch.appendChild(el);
+  });
+  ultimoCambioIdx=-1;
+  bench.innerHTML='';
+  const banquillo=t.squad.map((f,i)=>({f,i})).filter(x=>!t.once.includes(x.i));
+  if(!banquillo.length){ bench.innerHTML='<span class="bench-empty">Sin suplentes disponibles</span>'; return; }
+  banquillo.forEach(({f,i})=>{
+    const el=document.createElement('div');
+    el.className='bench-token'+(f.role==='GK'?' gk':'');
+    el.textContent=f.num;
+    el.title=f.name;
+    el.dataset.fichaIdx=i;
+    wireDrag(el,{tipo:'banco',ficha:i},f.num,f.role==='GK');
+    bench.appendChild(el);
+  });
+}
+function pintarPauseJugador(){
+  const box=$v('pauseJugador'); if(!box)return;
+  const p=S.ctrl;
+  if(!p){ box.innerHTML=''; return; }
+  const barras=[['VEL',p.a.pace],['CTR',p.a.ctl],['PAS',p.a.pas],['TIR',p.a.sho]]
+    .map(([l,v])=>`<div class="atb"><span>${l}</span><i style="width:${clamp((v-30)/62*100,3,100)}%"></i><b>${Math.round(v)}</b></div>`).join('');
+  box.innerHTML=`<div class="ficha" style="margin:0">
+      <div class="fh"><span class="fnum">${p.num}</span>
+        <div><div class="fnom">${p.name}</div>
+        <div class="farq">${({GK:'PORTERO',DF:'DEFENSA',MF:'MEDIOCAMPO',FW:'DELANTERO'})[p.role]||p.role}</div></div>
+        <div class="fval">⚽ ${p.goals}</div></div>
+      <div class="fbars">${barras}</div>
+    </div>`;
+}
 // ajustes en vivo desde la pausa
 (function(){
   const SW=['perezoso','normal','agresivo'], Q=['bajo','normal','alto'];
@@ -3953,7 +4045,8 @@ function togglePause(){
     $('pauseMin').textContent=
       `${Math.floor((S.half-1)*45+S.clock/60)}' · ${S.half===1?'1.ª':'2.ª'} parte · dificultad ${S.D.lbl}`;
     $('pauseScorers').innerHTML=scorersHTML();
-    pintarCambios();
+    pintarPauseJugador();
+    pintarAlineacion();
   }
   $('pause').classList.toggle('hide',!S.pausedFlag);
 }
