@@ -567,6 +567,33 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
   border-radius:2px;padding:2px 5px;background:rgba(255,47,142,.06);
   animation:pulseRibbon 2.4s ease-in-out infinite}
 @keyframes pulseRibbon{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* ══ Más vida en TODAS las tarjetas y botones ya existentes ══
+   Estas reglas van al final a propósito: pisan (por orden de
+   cascada, sin !important) a las declaraciones de arriba, así
+   que llegan de un jalón a cada pantalla que ya usa .modo/.opt/.go
+   — Partido Rápido, Dificultad, Entrenamiento, Competición,
+   Ajustes, Plantel — sin tocar el HTML de cada una.           */
+.modo{position:relative;overflow:hidden}
+.modo::before{content:'';position:absolute;left:0;top:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--home),#ffb3d9);opacity:0;transition:opacity .2s}
+.modo:hover::before{opacity:1}
+.modo:active{transform:scale(.98)}
+
+.opt{overflow:hidden}
+.opt[aria-pressed="true"]{position:relative}
+.opt[aria-pressed="true"]::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.4),transparent);
+  animation:sheen 2.8s ease-in-out infinite}
+/* variedad de color por nivel de dificultad, para que no todo sea rosa */
+#optDiff .opt[data-v="brutal"][aria-pressed="true"]{background:#fb923c;border-color:#fb923c}
+#optDiff .opt[data-v="leyenda"][aria-pressed="true"]{background:#facc15;border-color:#facc15;color:#3a2c06}
+
+.go{position:relative;overflow:hidden}
+.go::after{content:'';position:absolute;top:0;bottom:0;left:-25%;width:70px;pointer-events:none;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.45),transparent);
+  animation:sheen 3s ease-in-out infinite}
+.go:active{transform:scale(.985)}
 </style>
 </head>
 <body>
@@ -635,9 +662,9 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
       <div class="pane hide" id="pJugar">
         <div class="volver" data-ir="pMain">‹ volver</div>
         <div class="modos">
-          <button class="modo" data-ir="pAmis"><b>PARTIDO RÁPIDO</b><span>un partido suelto contra el rival que elijas</span></button>
-          <button class="modo" data-ir="pComp"><b>COMPETICIÓN</b><span>liga o copa, tú eliges cuántos equipos</span></button>
-          <button class="modo" data-ir="pEntr"><b>ENTRENAMIENTO</b><span>tutorial, 1 vs 1, 2 vs 2, penales y faltas</span></button>
+          <button class="modo" data-ir="pAmis"><b>⚡ PARTIDO RÁPIDO</b><span>un partido suelto contra el rival que elijas</span></button>
+          <button class="modo" data-ir="pComp"><b>🏆 COMPETICIÓN</b><span>liga o copa, tú eliges cuántos equipos</span></button>
+          <button class="modo" data-ir="pEntr"><b>🎯 ENTRENAMIENTO</b><span>tutorial, 1 vs 1, 2 vs 2, penales y faltas</span></button>
         </div>
       </div>
 
@@ -679,6 +706,7 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
             <button class="tab" data-tab="tTac"><b>Táctica</b><span>dibujo y planteamiento</span></button>
             <button class="tab" data-tab="tPart"><b>Partido</b><span>modalidad, cancha y reglas</span></button>
             <button class="tab" data-tab="tDatos"><b>Partida</b><span>guardado</span></button>
+            <button class="tab" data-tab="tControles"><b>Controles</b><span>teclas de mando</span></button>
           </nav>
           <div class="tabcont">
 
@@ -745,6 +773,11 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
               <div id="saveMsg" class="ayuda" style="margin-top:10px"></div>
             </section>
 
+            <section class="tsec hide" id="tControles">
+              <h3>Controles de teclado</h3>
+              <div id="controlesBox"></div>
+            </section>
+
           </div>
         </div>
       </div>
@@ -782,21 +815,6 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
         </div>
       </div>
 
-
-
-      <div class="keys">
-        <div><b>WASD</b>moverte</div>
-        <div><b>Shift</b>esprintar</div>
-        <div><b>Ratón</b>apuntar</div>
-        <div><b>Clic izq</b>tirar</div>
-        <div><b>Clic der</b>pasar</div>
-        <div><b>Z</b>+clic: pase filtrado</div>
-        <div><b>E</b>elevado · <b>V</b> raso · <b>G</b> colocado</div>
-        <div><b>R</b>regate</div>
-        <div><b>X</b>barrida</div>
-        <div><b>C</b>cambiar de jugador</div>
-        <div><b>Esc</b>pausa y cambios</div>
-      </div>
     </div>
   </div>
 
