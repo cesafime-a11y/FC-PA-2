@@ -1038,7 +1038,7 @@ function ficharCantera(){
 
 /* ── entrada ──────────────────────────────────────────────── */
 const K={};
-const ACT={up:0,down:0,left:0,right:0,sprint:0,pass:0,shoot:0,through:0,finesse:0,low:0,switch:0,slide:0,thru_mod:0,hud:0,regate:0};
+export const ACT={up:0,down:0,left:0,right:0,sprint:0,pass:0,shoot:0,through:0,finesse:0,low:0,switch:0,slide:0,thru_mod:0,hud:0,regate:0};
 /* Teclado remapeable: cada acción tiene una tecla asignada en BINDS,
    y MAP (tecla → acción) se reconstruye cada vez que cambia algo.
    El Shift para esprintar queda fijo aparte, no se pisa al remapear. */
