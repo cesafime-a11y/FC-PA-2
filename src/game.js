@@ -5,6 +5,8 @@ import { NAMES_H, NAMES_A } from './data/names.js';
 import { clamp, lerp, dist, norm, segDist } from './core/math.js';
 import { createRng } from './core/rng.js';
 import { TUNE } from './core/tune.js';
+import { SND, SFX, audio } from './audio/sfx.js';
+import { textoGol, textoFalta, candidatosAmbiente } from './narrative/narrador.js';
 
 const rng = createRng();
 const DIBUJOS = () => getForms(S.cfg.f7);
@@ -477,7 +479,9 @@ function kickoff(kickTeam){
 
 
 /* ══ NARRACIÓN ════════════════════════════════════════════
-   No inventa nada: todo sale de datos que el motor ya lleva.  */
+   El texto en sí vive en src/narrative/narrador.js (puro, sin
+   estado). Aquí solo se junta lo que hace falta de S/CAR y se
+   manda a say().                                              */
 const NAR={ult:0, dichas:[]};
 function narrar(txt,tipo){
   if(!txt)return;
@@ -488,41 +492,38 @@ function narrar(txt,tipo){
 }
 function narrarGol(sc,as,scorer,own){
   if(!sc)return;
-  const temporada=(CAR&&CAR.goleadores&&CAR.goleadores[sc.name])||0;
-  const enPartido=sc.goals;
-  const min=Math.floor((S.half-1)*45+S.clock/60)+1;
-  if(own){ narrar(`${sc.name} la manda a su propia portería. Silencio en la grada.`,'nt'); return; }
-  if(enPartido===3)      narrar(`¡Triplete de ${sc.name}! Se lleva el balón a casa.`,'nt');
-  else if(enPartido===2) narrar(`Segundo de ${sc.name} en el partido. Está desatado.`,'nt');
-  else if(temporada>=4)  narrar(`${sc.name} llega a ${temporada+1} goles esta temporada.`,'nt');
-  else if(min>=85)       narrar(`¡En el 85! ${sc.name} decide el partido en el último suspiro.`,'nt');
-  else if(as)            narrar(`${as.name} la pone, ${sc.name} la empuja. Jugada de manual.`,'nt');
-  else                   narrar(`Gol de ${sc.name}. ${S.teams[0].tag} ${S.score[0]}-${S.score[1]} ${S.teams[1].tag}`,'nt');
+  const txt=textoGol({
+    scorerName:sc.name, ownGoal:own, goalsInMatch:sc.goals,
+    goalsTemporada:(CAR&&CAR.goleadores&&CAR.goleadores[sc.name])||0,
+    minuto:Math.floor((S.half-1)*45+S.clock/60)+1,
+    assistName:as?as.name:null,
+    tagLocal:S.teams[0].tag, tagVisita:S.teams[1].tag,
+    scoreLocal:S.score[0], scoreVisita:S.score[1]
+  });
+  narrar(txt,'nt');
 }
 function narrarFalta(off,t){
-  const f=S.stats.fo[ti(t)];
-  if(off.yellow>=1&&f>=5) narrar(`${off.name} ya va con amarilla y sigue entrando fuerte. Peligro.`,'nt');
-  else if(f===5)          narrar(`Quinta falta del ${t.tag}. El árbitro empieza a cansarse.`,'');
-  else if(f===10)         narrar(`Diez faltas del ${t.tag}: están rompiendo el ritmo a propósito.`,'');
+  const r=textoFalta({
+    offenderName:off.name, offenderYellow:off.yellow,
+    foulsCount:S.stats.fo[ti(t)], teamTag:t.tag
+  });
+  if(r) narrar(r.txt,r.tipo);
 }
 function narrarAmbiente(dt){
   if(!S.running||S.freeze>0||S.tanda)return;
   if(S.clock-NAR.ult<70)return;                 // no atosigar
-  const min=Math.floor((S.half-1)*45+S.clock/60);
   const pos=100*S.possTick[0]/Math.max(.1,S.possTick[0]+S.possTick[1]);
-  const dif=S.score[0]-S.score[1];
-  const remA=S.stats.sh[0], remB=S.stats.sh[1];
-  const cands=[];
-  if(min>=80&&dif===0) cands.push('Últimos diez minutos y el marcador sigue igualado.');
-  if(min>=80&&dif===1) cands.push('Un gol arriba y el reloj corriendo. A sufrir.');
-  if(min>=80&&dif===-1)cands.push('Queda poco y hay que ir a por el empate.');
-  if(pos>=64)          cands.push(`El ${S.teams[0].tag} tiene el balón: ${pos.toFixed(0)}% de posesión.`);
-  if(pos<=36)          cands.push(`El ${S.teams[1].tag} se ha adueñado del balón.`);
-  if(remA>=8&&S.score[0]===0)cands.push(`${remA} remates y ningún gol. Falta puntería.`);
-  if(remB>=6&&S.score[1]===0)cands.push('El rival lo intenta pero no encuentra la portería.');
-  if(S.stats.co[0]>=4) cands.push(`Cuarto córner del ${S.teams[0].tag}. Están instalados en el área.`);
   const flojo=S.teams[0].players.filter(p=>p.stam<35).length;
-  if(flojo>=4)         cands.push(`${flojo} de los tuyos están fundidos. Toca mover el banquillo.`);
+  const cands=candidatosAmbiente({
+    minuto:Math.floor((S.half-1)*45+S.clock/60),
+    diferencia:S.score[0]-S.score[1],
+    posesionLocal:pos,
+    tagLocal:S.teams[0].tag, tagVisita:S.teams[1].tag,
+    remLocal:S.stats.sh[0], remVisita:S.stats.sh[1],
+    scoreLocal:S.score[0], scoreVisita:S.score[1],
+    cornersLocal:S.stats.co[0],
+    jugadoresCansados:flojo
+  });
   if(!cands.length)return;
   narrar(cands[(Math.random()*cands.length)|0],'');
 }
@@ -999,46 +1000,8 @@ function repDibujar(){
   return true;
 }
 
-/* ══ SONIDO ═════════════════════════════════════════════════
-   Todo sintetizado con WebAudio: ni un archivo externo.     */
-const SND={ctx:null, on:true, vol:.5};
-function audio(){
-  if(!SND.ctx){
-    try{ SND.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ SND.on=false; }
-  }
-  if(SND.ctx&&SND.ctx.state==='suspended')SND.ctx.resume();
-  return SND.ctx;
-}
-function tono(f0,f1,dur,tipo,vol,curva){
-  if(!SND.on)return; const c=audio(); if(!c)return;
-  const o=c.createOscillator(), g=c.createGain();
-  o.type=tipo||'sine'; o.frequency.setValueAtTime(f0,c.currentTime);
-  if(f1&&f1!==f0)o.frequency[curva==='exp'?'exponentialRampToValueAtTime':'linearRampToValueAtTime'](f1,c.currentTime+dur);
-  g.gain.setValueAtTime(0,c.currentTime);
-  g.gain.linearRampToValueAtTime((vol||.3)*SND.vol,c.currentTime+.008);
-  g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+dur);
-  o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+dur+.02);
-}
-function ruido(dur,vol,f,q){
-  if(!SND.on)return; const c=audio(); if(!c)return;
-  const n=Math.floor(c.sampleRate*dur), b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0);
-  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
-  const src=c.createBufferSource(); src.buffer=b;
-  const flt=c.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=f||900; flt.Q.value=q||1;
-  const g=c.createGain(); g.gain.value=(vol||.25)*SND.vol;
-  src.connect(flt).connect(g).connect(c.destination); src.start();
-}
-const SFX={
-  golpe:()=>{tono(180,60,.11,'triangle',.45,'exp');ruido(.07,.22,1400,1.2);},
-  pase:()=>{tono(150,80,.07,'triangle',.22,'exp');ruido(.04,.10,1100,1.2);},
-  poste:()=>{tono(1180,760,.35,'square',.20,'exp');},
-  parada:()=>{ruido(.10,.28,600,.8);},
-  entrada:()=>{ruido(.16,.30,320,.7);tono(90,50,.14,'sine',.25,'exp');},
-  silbato:()=>{tono(2100,2350,.16,'square',.16);setTimeout(()=>tono(2350,2050,.20,'square',.16),120);},
-  gol:()=>{ruido(1.5,.30,700,.6);tono(330,660,.5,'sawtooth',.14,'exp');
-           setTimeout(()=>tono(440,880,.6,'sawtooth',.12,'exp'),180);},
-  encontra:()=>{tono(220,110,.7,'sawtooth',.16,'exp');ruido(.9,.14,400,.5);}
-};
+/* ══ SONIDO ═══════════════════════════════════════════════
+   Ahora vive en src/audio/sfx.js — se importa arriba.       */
 
 /* ══ GUARDADO ═════════════════════════════════════════════
    Todo en el navegador. Si el entorno lo bloquea (algunos

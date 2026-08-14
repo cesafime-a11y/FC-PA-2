@@ -1,4 +1,4 @@
-/* ── core/rng.js ──────────────────────────────────────────────
+/* ── core/rng.js ──────────────────────────────────────────
    Generador de azar con semilla (mulberry32). Reemplaza a
    Math.random() en todo el motor.
 
@@ -21,7 +21,7 @@
      rng.pick(array)     // reemplazo de arr[(Math.random()*arr.length)|0]
      rng.shuffle(array)  // reemplazo de tu Fisher-Yates in-place (línea 1458)
      rng.chance(p)       // reemplazo de Math.random() < p (patrón más común)
-────────────────────────────────────────────────────────────── */
+──────────────────────────────────────────────────────────── */
 
 export function createRng(seed = Date.now() >>> 0) {
   let s = seed >>> 0;
@@ -62,4 +62,15 @@ export function createRng(seed = Date.now() >>> 0) {
   }
 
   return { rand, range, gauss, pick, shuffle, chance, getSeed: () => seed, setSeed: (n) => { s = n >>> 0; } };
+}
+
+/* Instancia única compartida: game.js y cualquier módulo que
+   necesite el mismo azar (como render.js, para el temblor de
+   cámara) llaman a getRng() y reciben siempre la misma —
+   createRng() sigue disponible aparte para quien quiera una
+   instancia independiente (como ya hacen las pruebas).       */
+let _instancia = null;
+export function getRng(seed) {
+  if (!_instancia) _instancia = createRng(seed);
+  return _instancia;
 }
