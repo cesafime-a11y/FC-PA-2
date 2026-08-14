@@ -20,7 +20,7 @@ import { clamp, lerp, norm, dist, segDist } from '../core/math.js';
 import { S, F, CY, GT, GB, SUP } from '../core/state.js';
 import { getRng } from '../core/rng.js';
 import { REP } from '../replay/buffer.js';
-import { passPlan, shotPlan, switchCandidate, screenToWorld, other } from '../game.js';
+import { passPlan, shotPlan, switchCandidate, screenToWorld, other, ACT } from '../game.js';
 
 const rng = getRng();
 const gauss = () => rng.gauss();
