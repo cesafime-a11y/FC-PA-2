@@ -652,7 +652,49 @@ function drawCharge(){
 
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const radarCv=document.getElementById('radar'),rctx=radarCv.getContext('2d');
-let cvW=0,cvH=0,SC=12,SCbase=12,DPRCAP=1.5,lowFX=false,FPS=60;
+export let cvW=0,cvH=0,SC=12,SCbase=12,DPRCAP=1.5,lowFX=false,FPS=60;
+let fpsN=0,fpsT=0;
+/* FPS/DPRCAP/lowFX viven aquí (son del render), así que la lógica
+   que los mide y ajusta también — game.js solo llama a esto cada
+   cuadro con el dt, no puede tocar estas variables directamente
+   (son un import de solo lectura desde su lado).                */
+export function actualizarFPS(dt){
+  fpsN++; fpsT+=dt;
+  if(fpsT>=1){
+    FPS=fpsN/fpsT; fpsN=0; fpsT=0;
+    if(FPS<45&&DPRCAP>1&&S.tune.q<2){DPRCAP=1;resize();}
+    else if(FPS<38&&!lowFX&&S.tune.q<2)lowFX=true;
+  }
+}
+/* el slider de calidad gráfica (en Ajustes) también necesita escribir
+   estas dos — mismo motivo, no puede asignarlas directo desde game.js */
+export function setCalidad(v){
+  DPRCAP=[1,1.5,2][v]||1.5; lowFX=(v===0);
+}
+/* game.js no puede tocar AFIC/pitchCv directo (son privadas de acá) —
+   cuando cambia la cancha o la superficie, llama a esto para que el
+   campo y el público se vuelvan a dibujar en vez de usar la caché vieja. */
+export function invalidarCachesCancha(){
+  AFIC=null; pitchCv=null;
+}
+
+export function drawRadar(){
+  const w=radarCv.width,h=radarCv.height;
+  rctx.clearRect(0,0,w,h);
+  rctx.fillStyle='#0a1a12';rctx.fillRect(0,0,w,h);
+  rctx.strokeStyle='rgba(255,255,255,.14)';rctx.lineWidth=1;
+  rctx.strokeRect(6,6,w-12,h-12);
+  rctx.beginPath();rctx.moveTo(w/2,6);rctx.lineTo(w/2,h-6);rctx.stroke();
+  rctx.beginPath();rctx.arc(w/2,h/2,(h-12)*.135,0,7);rctx.stroke();
+  const X=x=>6+(x/F.W)*(w-12), Y=y=>6+(y/F.H)*(h-12);
+  for(const p of S.players){
+    rctx.fillStyle=p.team.ai?'#39d7ff':'#ff2f8e';
+    rctx.beginPath();rctx.arc(X(p.x),Y(p.y),p===S.ctrl?5:3.2,0,7);rctx.fill();
+    if(p===S.ctrl){rctx.strokeStyle='#fff';rctx.lineWidth=1.4;rctx.stroke();}
+  }
+  const b=S.ball;
+  rctx.fillStyle='#fff';rctx.beginPath();rctx.arc(X(b.x),Y(b.y),2.6,0,7);rctx.fill();
+}
 
 /* repDibujar se muda aquí desde Repeticiones — es la única función
    de ese sistema que necesita el canvas, así que pertenece con el
