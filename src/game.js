@@ -3875,8 +3875,10 @@ function pedirConfirmarAlineacion(origen,arrancar){
   origenAlineacionPre=origen; onConfirmarAlineacion=arrancar;
   irA('pAlineacionPre');
 }
-$('volverAlineacionPre').onclick=()=>{ onConfirmarAlineacion=null; irA(origenAlineacionPre); };
-$('btnConfirmarAlineacion').onclick=()=>{
+const _volverAlin=$('volverAlineacionPre');
+if(_volverAlin) _volverAlin.onclick=()=>{ onConfirmarAlineacion=null; irA(origenAlineacionPre); };
+const _btnConfirmAlin=$('btnConfirmarAlineacion');
+if(_btnConfirmAlin) _btnConfirmAlin.onclick=()=>{
   if(onConfirmarAlineacion){ const f=onConfirmarAlineacion; onConfirmarAlineacion=null; f(); }
 };
 $('btnEntr').onclick=()=>{

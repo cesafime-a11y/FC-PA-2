@@ -793,12 +793,20 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
         <button class="go" id="btnEntr">EMPEZAR</button>
       </div>
 
+      <div class="pane hide" id="pAlineacionPre">
+        <div class="volver" id="volverAlineacionPre">‹ volver</div>
+        <div class="kicker" style="margin-bottom:4px">PLANTEAMIENTO TÁCTICO</div>
+        <p class="ayuda" style="margin-bottom:14px">Confirma tu alineación antes de saltar al campo. Arrastra jugadores del banquillo al campo (o entre posiciones del campo) para acomodar tu once — aquí no hay límite, es solo planeación.</p>
+        <div id="preLineupPitch" class="lineup-pitch"></div>
+        <div id="preLineupBench" class="lineup-bench"></div>
+        <button class="go" id="btnConfirmarAlineacion" style="margin-top:16px">CONFIRMAR Y JUGAR</button>
+      </div>
+
       <div class="pane hide" id="pConf">
         <div class="volver" data-ir="pMain">‹ volver</div>
         <div class="confwrap">
           <nav class="tabs" id="confTabs">
-            <button class="tab" data-tab="tClub" aria-pressed="true"><b>🎨 Club</b><span>nombre, colores y cantera</span></button>
-            <button class="tab" data-tab="tPlant"><b>👕 Plantilla</b><span>once inicial y suplentes</span></button>
+            <button class="tab" data-tab="tClub" aria-pressed="true"><b>🎨 Club</b><span>nombre y colores</span></button>
             <button class="tab" data-tab="tTac"><b>📋 Táctica</b><span>dibujo y planteamiento</span></button>
             <button class="tab" data-tab="tPart"><b>🥅 Partido</b><span>modalidad, cancha y reglas</span></button>
             <button class="tab" data-tab="tDatos"><b>💾 Partida</b><span>guardado</span></button>
@@ -814,15 +822,7 @@ header{background:linear-gradient(180deg,#ffffff,#f2f4f9);border-bottom:2px soli
                 <div class="cprev" id="clubPrev"></div>
               </div>
               <div class="paleta" id="paletaBox"></div>
-              <h3 style="margin-top:22px">Cantera</h3>
-              <p class="ayuda">Reparte el presupuesto entre los cinco atributos. Cada demarcación tiene sus precios: para un delantero el tiro es barato y la entrada cara.</p>
-              <div id="canteraBox"></div>
-            </section>
-
-            <section class="tsec hide" id="tPlant">
-              <h3>Alineación</h3>
-              <p class="ayuda">Pulsa un titular y después un suplente para intercambiarlos. Cambiar de dibujo recoloca el once solo.</p>
-              <div id="onceBox"></div>
+              <p class="ayuda" style="margin-top:16px">Tu alineación y banquillo se confirman en la pantalla previa a cada partido.</p>
             </section>
 
             <section class="tsec hide" id="tTac">
