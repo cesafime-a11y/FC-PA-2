@@ -16,6 +16,12 @@ const rng = getRng();
 const DIBUJOS = () => getForms(S.cfg.f7);
 'use strict';
 const E={},$=id=>E[id]||(E[id]=document.getElementById(id));
+/* Conecta un onclick solo si el elemento existe de verdad. Sin esto, un
+   botón nuevo que por descuido no llegó al HTML (paste incompleto, por
+   ejemplo) tronaba aquí y se llevaba entre las patas TODO el código que
+   venía después en el archivo — de ahí bugs como "ACT is not defined"
+   que en realidad no tenían nada que ver con ACT.                     */
+function onClick(id,fn){ const el=$(id); if(el)el.onclick=fn; }
 /* Los paneles se redibujan con innerHTML: sus nodos cambian de identidad,
    así que la caché de arriba dejaría los clics atados a nodos muertos.
    Para todo lo que se regenera hay que consultar en vivo.            */
@@ -3198,39 +3204,37 @@ function pedirConfirmarAlineacion(origen,arrancar){
   origenAlineacionPre=origen; onConfirmarAlineacion=arrancar;
   irA('pAlineacionPre');
 }
-const _volverAlin=$('volverAlineacionPre');
-if(_volverAlin) _volverAlin.onclick=()=>{ onConfirmarAlineacion=null; irA(origenAlineacionPre); };
-const _btnConfirmAlin=$('btnConfirmarAlineacion');
-if(_btnConfirmAlin) _btnConfirmAlin.onclick=()=>{
+onClick('volverAlineacionPre',()=>{ onConfirmarAlineacion=null; irA(origenAlineacionPre); });
+onClick('btnConfirmarAlineacion',()=>{
   if(onConfirmarAlineacion){ const f=onConfirmarAlineacion; onConfirmarAlineacion=null; f(); }
-};
-$('btnEntr').onclick=()=>{
+});
+onClick('btnEntr',()=>{
   S.compRival=null;
   $('menu').classList.add('hide'); $('end').classList.add('hide');
   resize(); newMatch();
-};
-$('btnGo').onclick=()=>{
+});
+onClick('btnGo',()=>{
   S.compRival=null; S.cfg.mode='match';
   pedirConfirmarAlineacion('pAmis',()=>{
     $('menu').classList.add('hide'); $('end').classList.add('hide');
     resize(); newMatch();
   });
-};
-$('btnAgain').onclick=()=>{
+});
+onClick('btnAgain',()=>{
   $('end').classList.add('hide');
   $('menu').classList.remove('hide');
   S.phase='menu';
   irA(COMP&&!COMP.fin?'pComp':'pMain');   // vuelves a tu liga o copa, no al limbo
-};
-$('btnResume').onclick=togglePause;
-$('btnContinuarSegundo').onclick=reanudarSegundoTiempo;
-$('btnQuit').onclick=()=>{
+});
+onClick('btnResume',togglePause);
+onClick('btnContinuarSegundo',reanudarSegundoTiempo);
+onClick('btnQuit',()=>{
   S.pausedFlag=false;S.running=false;S.phase='menu';
   $('pause').classList.add('hide');
   $('menu').classList.remove('hide');
   if(S.compRival&&COMP&&!COMP.fin){cerrarJornada(0,3);S.compRival=null;}
   irA(COMP&&!COMP.fin?'pComp':'pMain');
-};
+});
 let subSel=-1;
 function pintarCambios(){
   const box=$v('subsBox'), t=S.teams&&S.teams[0];
